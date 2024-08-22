@@ -21,3 +21,11 @@
 # Инструкция по сборке
 
 тут будет набор команд которые надо выполнить, что бы получить исполняемый файл под linux
+
+- to check for clang-format: ```clang-format -n file_name.c```
+- to put file to clang-format: ```clang-format -i file_name.c```
+- to compile an object file: ```gcc -Wall -Werror -Wextra file_name(s).c -c program_name```
+- to compile an executable file: ```gcc -Wall -Werror -Wextra file_name(s).o -o program_name```
+- to check for cpp: ```cppcheck file_name.c```
+- to check for leaks: ```leaks -atExit -- ./file_name.exe```
+
