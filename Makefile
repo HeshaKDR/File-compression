@@ -4,8 +4,8 @@ all: cmptool check_file_action
 
 
 
-cmptool: src/file_action.o src/cmptool.o
-	gcc $(FLAGS) -o build/cmptool src/file_action.o src/cmptool.o
+cmptool: src/huffman.o src/cmptool.o
+	gcc $(FLAGS) -o build/cmptool src/huffman.o src/cmptool.o
 
 
 check_file_action: src/file_action.o tests/test.o
@@ -19,6 +19,9 @@ file_action.o: src/file_action.c
 
 cmptool.o: src/cmptool.c
 	gcc $(FLAGS) -c src/cmptool.c
+	
+huffman.o: src/huffman.c
+	gcc $(FLAGS) -c src/huffman.c
 
 clear:
 	rm -f src/*.o & rm -f tests/*.o
