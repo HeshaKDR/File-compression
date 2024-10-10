@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "file_action.h"
+#include "huffman.h"
 
 
 
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
         } else {
           FILE *cmp_file = NULL;
           cmp_file = fopen(argv[3], "w");
-          file_rewriting(existing_file, cmp_file);
+          compress_file(existing_file, cmp_file);
           fclose(cmp_file);
           fclose(existing_file);
         }

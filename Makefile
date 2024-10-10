@@ -7,8 +7,8 @@ copy:
 clear:
 	rm -rf build/src build/cmptool build/tests
 
-cmptool: huffman.o cmptool.o file_action.o
-	gcc $(FLAGS) -o build/cmptool build/src/huffman.o build/src/cmptool.o build/src/file_action.o
+cmptool: huffman.o cmptool.o 
+	gcc $(FLAGS) -o build/cmptool build/src/huffman.o build/src/cmptool.o 
 
 cmptool.o:
 	gcc $(FLAGS) -c -c build/src/cmptool.c -o build/src/cmptool.o
