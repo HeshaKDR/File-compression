@@ -10,163 +10,229 @@ void count_frequency(FILE *fp, unsigned *freq) {
   fseek(fp, original_pos, SEEK_SET);
 }
 
-void construct_huffman(unsigned *freq_in, HuffNode *tree) {
-  int count = 256; //установка счетчика до 256
-  unsigned freq[256] = {0}; // создания массива для повторяющитхся значений 
-  HuffNode *node[256];  //выделение памяти под узлы дерева 
-
-  for (int i = 0; i < 256; i++) { //включаем цикл
-    freq[i] = freq_in[i]; //переписываем массив (с частотой повторений) который получили в функции count_freq во вновь созданный массив freq - каждму узлу присваевается соотвествующая частота повторений, выявленная в функции
-    tree[i].data = i; // задаем порядковый номер каждому узлу по ходу перебора массива 
-    tree[i].left = NULL;
-    tree[i].right = NULL;
-    tree[i].parent = NULL;
-    tree[i].is_leaf = 1; //ставим указатели в узле на NULL
-    node[i] = &tree[i]; //присваеваем адрес узла дерева к созданному узлу
+void min_heapify(HuffNode **heap, int n, int i) {
+  int smallest = i;
+  int left = 2 * i + 1;
+  int right = 2 * i + 2;
+  if (left < n && heap[left]->freq < heap[smallest]->freq) {
+    smallest = left;
   }
-  for (int i = 0; i < 256; i++) {  //делаем сортировку пузырьком полученного массива 
-    for (int j = 0; j < 256 - i - 1; j++) {
-      if (j + 1 < 256 && (freq[j] < freq[j + 1] || (freq[j] == freq[j+1] && j < j + 1))) { // условие что если значение больше впередиидущего значения - они меняются местами 
-        unsigned t = freq[j];
-        freq[j] = freq[j + 1];
-        freq[j + 1] = t;
-        HuffNode *p = node[j]; // такое же происходит и с порядком узлов в дереыве
-        node[j] = node[j + 1];
-        node[j + 1] = p;
-      }
-    }
+  if (right < n && heap[right]->freq < heap[smallest]->freq) {
+    smallest = right;
   }
-
-  while (count > 1) {
-    int pos = 512 - count;
-    HuffNode *parent = &tree[pos];
-    int i = count - 2, j = count - 1;
-    parent->left = node[j]; //присваеваем левому узлу ячейку узла j
-    parent->right = node[i]; //присваеваем правому узлу ячейку узла i
-    node[j]->parent = parent;
-    node[i]->parent = parent;
-    node[i]->is_leaf = 0;
-    node[j]->is_leaf = 0;
-    node[i] = parent;
-    freq[i] += freq[j]; //происходит сложение частот повторений
-    for (; i > 0 && freq[i] > freq[i - 1]; i--) { //продолжение сортировки узлов но теперьб уже с вновь обращованным узлом
-      unsigned t = freq[i];
-      freq[i] = freq[i - 1];
-      freq[i - 1] = t;
-      HuffNode *p = node[i];
-      node[i] = node[i - 1];
-      node[i - 1] = p;
-    }
-    count--;
+  if (smallest != i) {
+    HuffNode *temp = heap[i];
+    heap[i] = heap[smallest];
+    heap[smallest] = temp;
+    min_heapify(heap, n, smallest);
   }
-  node[0]->parent = NULL;
 }
 
-void tree_bit_encoding(HuffNode *node, FILE *fout, unsigned char *buffer, int *bit_count){
-  if(node->is_leaf){
-    *buffer |= (0 << *bit_count);
-    (*bit_count)++;
-    if(*bit_count == 8){
-      
-      fputc(*buffer, fout);
-      *buffer = 0;
-      bit_count = 0;
-      }
-      for(int i = 7; i >= 0; i--){
-        *buffer |= ((node->data >> i) & 1) << *bit_count;
-        (*bit_count)++;
-        if(*bit_count == 8){
-          
-          fputc(*buffer, fout);
-          *buffer = 0;
-          *bit_count = 0;        }
-      }
+HuffNode *extract_min(HuffNode **heap, int *n) {
+  if (*n <= 0) {
+    return NULL;
+  } else {
+    HuffNode *minNode = heap[0];
+    heap[0] = heap[--(*n)];
+    min_heapify(heap, *n, 0);
+    return minNode;
   }
-  else{
-    *buffer |= (1 << *bit_count);
-    (*bit_count) ++;
-    if(*bit_count == 8){
-      fputc(*buffer, fout);
-      *buffer = 0;
-      *bit_count = 0;
+}
 
+void insert_heap(HuffNode **heap, int *n, HuffNode *node) {
+  heap[(*n)++] = node;
+  for (int i = *n - 1; i > 0; i = (i - 1) / 2) {
+    if (heap[i]->freq < heap[(i - 1) / 2]->freq) {
+      HuffNode *temp = heap[i];
+      heap[i] = heap[(i - 1) / 2];
+      heap[(i - 1) / 2] = temp;
+    } else {
+      break;
     }
+  }
+}
+
+void construct_huffman(unsigned *freq_in, HuffNode **root) {
+
+  HuffNode *heap[256];
+  int heap_size = 0;
+
+  for (int i = 0; i < 256; i++) {
+    if (freq_in[i] > 0) {
+      HuffNode *node = malloc(sizeof(HuffNode));
+      node->data = i;
+      node->freq = freq_in[i];
+      node->left = NULL;
+      node->right = NULL;
+      node->parent = NULL;
+      node->is_leaf = 1;
+      insert_heap(heap, &heap_size, node);
+    }
+  }
+
+  while (heap_size > 1) {
+
+    HuffNode *left = extract_min(heap, &heap_size);
+    HuffNode *right = extract_min(heap, &heap_size);
+    HuffNode *parent = malloc(sizeof(HuffNode));
+    parent->data = 0;
+    parent->freq = left->freq + right->freq;
+    parent->left = left;
+    parent->right = right;
+    parent->parent = NULL;
+    parent->is_leaf = 0;
+
+    left->parent = parent;
+    right->parent = parent;
+    insert_heap(heap, &heap_size, parent);
+  }
+  *root = (heap_size > 0) ? extract_min(heap, &heap_size) : NULL;
+  printf("Huffman tree structure: \n");
+  print_tree(*root, 0);
+}
+
+void print_tree(HuffNode *node, int depth) {
+  if (node == NULL) {
+    return;
+  }
+  for (int i = 0; i < depth; i++)
+    printf(" ");
+  if (node->is_leaf) {
+    printf("Leaf: '%c' (ASCII %d), freq = %u\n", node->data, node->data,
+           node->freq);
+
+  } else {
+    printf("Internal freq = %u\n", node->freq);
+  }
+  print_tree(node->left, depth + 1);
+  print_tree(node->right, depth + 1);
+}
+
+void generate_codes(HuffNode *root, char *code, int depth, char **codes) {
+  if (root == NULL)
+    return;
+  if (root->is_leaf) {
+    code[depth] = '\0';
+    codes[root->data] = strdup(code);
+    return;
+  }
+  code[depth] = '0';
+  generate_codes(root->left, code, depth + 1, codes);
+  code[depth] = '1';
+  generate_codes(root->right, code, depth + 1, codes);
+}
+
+void tree_bit_encoding(HuffNode *node, FILE *fout, unsigned char *buffer,
+                       int *bit_count) {
+
+  if (node == NULL)
+    return;
+
+  *buffer |= (node->is_leaf ? 0 : 1) << (7 - *bit_count);
+  (*bit_count)++;
+  if (*bit_count == 8) {
+
+    fputc(*buffer, fout);
+    printf("Encoded byte: %02X\n", *buffer);
+    *buffer = 0;
+    *bit_count = 0;
+  }
+  if (node->is_leaf) {
+    for (int i = 0; i < 8; i++) {
+      *buffer |= ((node->data >> (7 - i)) & 1) << (7 - *bit_count);
+      (*bit_count)++;
+      if (*bit_count == 8) {
+
+        fputc(*buffer, fout);
+        printf("Encoded byte: %02X\n", *buffer);
+        *buffer = 0;
+        *bit_count = 0;
+      }
+    }
+  } else {
     tree_bit_encoding(node->left, fout, buffer, bit_count);
     tree_bit_encoding(node->right, fout, buffer, bit_count);
   }
 }
 
+void encode_stream(FILE *fin, FILE *fout, HuffNode *root, unsigned *padding) {
+  char *codes[256] = {NULL};
+  char code[256];
+  generate_codes(root, code, 0, codes);
 
-
-void encode_stream(FILE *fin, FILE *fout, HuffNode *tree, unsigned *padding) {
   int ch;
   unsigned char buffer = 0;
   int bit_count = 0;
-  HuffNode *p;
-  unsigned char code[256] = {0};
+
   while ((ch = fgetc(fin)) != EOF) {
-    if(ch >= 0 && ch < 256){
-      
-    
-    p = &tree[ch];
-    
-    
-    int code_length = 0;
-    while (p->parent) {
-      if (p == p->parent->right) {
-        code[code_length] = 1;
+    if (ch >= 0 && ch < 256 && codes[ch] != NULL) {
+      printf("Encoding '%c' (ASCII %d): %s\n", ch, ch, codes[ch]);
+      for (int i = 0; codes[ch][i]; i++) {
+        buffer |= (codes[ch][i] - '0') << (7 - bit_count);
+        bit_count++;
+        if (bit_count == 8) {
+          fputc(buffer, fout);
+          printf("Encode byte: %02X\n", buffer);
+          buffer = 0;
+          bit_count = 0;
+        }
       }
-      else{
-        code[code_length] = 0;
-      }
-      p = p->parent;
-      code_length++;
-    }
-
-    for (int i = code_length - 1; i >= 0; i--) {
-
-      buffer |= code[i] << bit_count;
-      
-      bit_count++;
-      if (bit_count == 8) {
-        
-        fputc(buffer, fout);
-        bit_count = 0;
-        buffer = 0;
-      }
-    }
-  } else{
-    printf("invalid characters in the file");
+    } else {
+      printf("Invalid character in the file\n");
       return;
-    
+    }
   }
-  
-}
-if (bit_count > 0) {
+
+  if (bit_count > 0) {
     fputc(buffer, fout);
+    printf("Encode byte (final) : %02X\n", buffer);
+    *padding = 8 - bit_count;
+  } else {
+    *padding = 0;
   }
-  *padding = 8 - bit_count;
+  for (int i = 0; i < 256; i++) {
+    if (codes[i] != NULL) {
+      free(codes[i]);
+    }
+  }
 }
 
 void compress_file(FILE *fin, FILE *fout) {
 
   unsigned freq[256] = {0}, padding = 0; //- хз
-  
+
   unsigned char buffer = 0;
   int bit_count = 0;
-  HuffNode tree[512];
+  HuffNode *root = NULL;
 
-  
-    count_frequency(fin, freq);
-    construct_huffman(freq, tree);
-    rewind(fin);
-    tree_bit_encoding(&tree[511], fout, &buffer, &bit_count);
-    
-    if(bit_count > 0){
-      fputc(buffer, fout);
-    }
-    encode_stream(fin, fout, tree, &padding);
-    
-    fwrite(&padding, sizeof(unsigned), 1, fout);
+  count_frequency(fin, freq);
+  construct_huffman(freq, &root);
 
+  const unsigned magic = 0x48554646;
+  fwrite(&magic, sizeof(unsigned), 1, fout);
+  long padding_pos = ftell(fout);
+
+  fwrite(&padding, sizeof(unsigned), 1, fout);
+
+  tree_bit_encoding(root, fout, &buffer, &bit_count);
+
+  if (bit_count > 0) {
+    fputc(buffer, fout);
+    buffer = 0;
+    bit_count = 0;
   }
+  rewind(fin);
+  encode_stream(fin, fout, root, &padding);
+  fseek(fout, padding_pos, SEEK_SET);
+  fwrite(&padding, sizeof(unsigned), 1, fout);
+
+  free_tree(root);
+}
+
+void free_tree(HuffNode *node) {
+  if (node != NULL) {
+    free_tree(node->left);
+    free_tree(node->right);
+    free(node);
+  }
+}
