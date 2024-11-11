@@ -1,24 +1,32 @@
 FLAGS = -Wall -Werror -Wextra
 
-all: cmptool check_file_action
+all: clear copy cmptool
 
-
-
-cmptool: src/file_action.o src/cmptool.o
-	gcc $(FLAGS) -o build/cmptool src/file_action.o src/cmptool.o
-
-
-check_file_action: src/file_action.o tests/test.o
-	gcc src/file_action.o tests/test.o -o build/check_file_action -lcheck -lm -lpthread -lrt -lsubunit
-
-test.o: tests/test.c
-	gcc $(FLAGS) -c tests/test.c
-
-file_action.o: src/file_action.c
-	gcc $(FLAGS) -c src/file_action.c
-
-cmptool.o: src/cmptool.c
-	gcc $(FLAGS) -c src/cmptool.c
-
+copy:
+	cp -r ./src build/
 clear:
-	rm -f src/*.o & rm -f tests/*.o
+	rm -rf build/src build/cmptool build/tests
+
+cmptool: huffman.o cmptool.o 
+	gcc $(FLAGS) -o build/cmptool build/src/huffman.o build/src/cmptool.o 
+
+cmptool.o:
+	gcc $(FLAGS) -c -c build/src/cmptool.c -o build/src/cmptool.o
+	
+huffman.o:
+	gcc $(FLAGS) -c build/src/huffman.c -o build/src/huffman.o
+
+file_action.o:
+	gcc $(FLAGS) -c build/src/file_action.c -o build/src/file_action.o
+
+
+tests: copy_tests check_file_action
+
+copy_tests:
+	cp -r ./tests build/
+
+check_file_action: test.o file_action.o
+	gcc build/src/file_action.o build/tests/test.o -o build/check_file_action -lcheck -lm -lpthread -lrt -lsubunit
+
+test.o: 
+	gcc $(FLAGS) -c build/tests/test.c -o build/tests/test.o

@@ -1,4 +1,18 @@
-# Схема работы приложения:
+# Cmptool
+
+## Development
+
+Build application: 
+
+```
+make all # for build cmptool
+./build/cmptool -h 
+
+make tests # for run tests
+```
+
+
+## Схема работы приложения:
 1) Отrкрытие файла;
 2) Прохождение по файлу;
 3) Закрытие файла;
@@ -7,7 +21,7 @@
 
 Синтаксис: наимнеовапние утилиты, каккой файл создается, какой пкуть до файла котрый надо архивировать. 
 
-# План
+## План
 
 - прописать инструкцию по сборке
 - приложение получает на вход 2 аргумента `cpmtool ./text.txt ./text.cmp`. 1 - название файла который будем сжимать, 2 - название файла архива. + одельная функция для сжатия которая ничего не делает
@@ -16,13 +30,3 @@
 - добавление распаковки архива -u (`cmptool -u ./text.cmp ./text2.txt`)
 - настроить CI на базе github
 - сделать поддержку директорий, при сжатии первый аргумент может быть директория *
-
-
-# Инструкция по сборке
-
-тут будет набор команд которые надо выполнить, что бы получить исполняемый файл под linux
-```
-clang-format -n file_name.c #to check for clang-format (optional)
-clang-format -i file_name.c #to put file to clang-format
-gcc -Wall -Werror -Wextra file_name(s).c -o program_name #to compile an executable file
-```
