@@ -3,7 +3,7 @@ FLAGS = -Wall -Werror -Wextra
 all: clear copy cmptool
 
 copy:
-	cp -r ./src build/
+	cp -r ./src ./tests/data  build/
 clear:
 	rm -rf build/src build/cmptool build/tests
 
@@ -31,5 +31,6 @@ copy_tests:
 check_file_action: test.o file_action.o
 	gcc build/src/file_action.o build/tests/test.o -o build/check_file_action -lcheck -lm -lpthread -lrt -lsubunit
 
-test.o: 
-	gcc $(FLAGS) -c build/tests/test.c -o build/tests/test.o
+test: 
+	gcc -o build/src/test_huffman build/data/test_huffman.c build/src/huffman.c -lcunit
+	./build/src/test_huffman
